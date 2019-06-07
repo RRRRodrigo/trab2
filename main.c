@@ -16,9 +16,8 @@ int main() {
                cntArea;
   int r;
 
-  scanf("Raio do Blur: %d", &r);
-
-  float alpha = 0.998;
+  printf("\nDigite o raio do blur: \n");
+  scanf("%d", &r);
 
   for (int i=0; i<(img.width); i++) {
     for (int j=0; j<(img.height); j++) {
