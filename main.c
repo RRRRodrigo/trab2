@@ -9,8 +9,8 @@ int main() {
   img = abrir_imagem("data/cachorro.jpg");
   img_copy = abrir_imagem("data/cachorro.jpg");
 
-  unsigned int tmp;
-  unsigned int cntR,
+ 
+  float cntR,
                cntG,
                cntB,
                cntArea;

@@ -3,15 +3,20 @@
 #include <unistd.h>
 #include <imageprocessing.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+int r;
+imagem *img, *img_copy;
 
 void thread_R(imagem img, imagem img_copy){
-  for (int i=0; i<(img->width); i++) {
-    for (int j=0; j<(img->height); j++) {
+  float cntR;
+  float cntAreaR;
+
+  for (int i=0; i<(img.width); i++) {
+    for (int j=0; j<(img.height); j++) {
       //inicializa variaveis auxiliares
       cntR=0;
-      cntG=0;
-      cntB=0;
-      cntArea=0;
+      cntAreaR=0;
 
       //Percorre a area de aplicacao do blur
       for(int k=-r; k<=r; k++){
@@ -19,27 +24,27 @@ void thread_R(imagem img, imagem img_copy){
 
           if((j+l)>0 && (j+l)<img.height && (i+k)>0 && (i+k)<img.width){
             //Acessa uma posicao valida e acumula os valores de cada canal dentro da area
-            cntR += img->r[(j+l)*img.width + i+k];
+            cntR += img.r[(j+l)*img.width + i+k];
 
-            cntArea++;
+            cntAreaR = cntAreaR + 1.0;
           }
         }
 
       }
        //gera o pixel da nova imagem
-      img_copy->r[j*img.width + i] = cntR/cntArea;
+      img_copy.r[j*img.width + i] =((float)cntR)/((float)cntAreaR);
     }
   }
 }
 
 void thread_G(imagem img, imagem img_copy){
-  for (int i=0; i<(img->width); i++) {
-    for (int j=0; j<(img->height); j++) {
+  float cntG;
+  float cntAreaG;
+  for (int i=0; i<(img.width); i++) {
+    for (int j=0; j<(img.height); j++) {
       //inicializa variaveis auxiliares
-      cntR=0;
       cntG=0;
-      cntB=0;
-      cntArea=0;
+      cntAreaG=0;
 
       //Percorre a area de aplicacao do blur
       for(int k=-r; k<=r; k++){
@@ -47,27 +52,27 @@ void thread_G(imagem img, imagem img_copy){
 
           if((j+l)>0 && (j+l)<img.height && (i+k)>0 && (i+k)<img.width){
             //Acessa uma posicao valida e acumula os valores de cada canal dentro da area
-            cntR += img->g[(j+l)*img.width + i+k];
+            cntG += img.g[(j+l)*img.width + i+k];
 
-            cntArea++;
+            cntAreaG = cntAreaG + 1.0;
           }
         }
 
       }
        //gera o pixel da nova imagem
-      img_copy->g[j*img.width + i] = cntR/cntArea;
+      img_copy.g[j*img.width + i] =((float)cntG)/((float)cntAreaG);
     }
   }
 }
 
 void thread_B(imagem img, imagem img_copy){
-  for (int i=0; i<(img->width); i++) {
-    for (int j=0; j<(img->height); j++) {
+  float cntAreaB;
+  float cntB;
+  for (int i=0; i<(img.width); i++) {
+    for (int j=0; j<(img.height); j++) {
       //inicializa variaveis auxiliares
-      cntR=0;
-      cntG=0;
       cntB=0;
-      cntArea=0;
+      cntAreaB=0;
 
       //Percorre a area de aplicacao do blur
       for(int k=-r; k<=r; k++){
@@ -75,63 +80,68 @@ void thread_B(imagem img, imagem img_copy){
 
           if((j+l)>0 && (j+l)<img.height && (i+k)>0 && (i+k)<img.width){
             //Acessa uma posicao valida e acumula os valores de cada canal dentro da area
-            cntR += img->b[(j+l)*img.width + i+k];
+            cntB += img.b[(j+l)*img.width + i+k];
 
-            cntArea++;
+            cntAreaB = cntAreaB + 1.0;
           }
         }
 
       }
        //gera o pixel da nova imagem
-      img_copy->b[j*img.width + i] = cntR/cntArea;
+      img_copy.b[j*img.width + i] =((float)cntB)/((float)cntAreaB);
     }
   }
 }
 
-int r;
-imagem img, img_copy;
 
 int main(){
   int prot = PROT_READ | PROT_WRITE;
-  int visi = MAP_PRIVATE | MAP_ANON;
-  imagem* img = mmap(NULL, sizeof(imagem), prot, visi ,0,0);
-  imagem* img_copy = mmap(NULL, sizeof(imagem), prot, visi ,0,0);
+  int visi = MAP_SHARED | MAP_ANON;
+  imagem* img = mmap(NULL, sizeof(imagem), prot, visi , -1,0);
+  imagem* img_copy = mmap(NULL, sizeof(imagem), prot, visi , -1,0);
 
-  pid_t pid[3];
+  pid_t pid;
 
-  img = abrir_imagem("data/cachorro.jpg");
-  img_copy = abrir_imagem("data/cachorro.jpg");
+  *img = abrir_imagem("data/cachorro.jpg");
+  img_copy->r = mmap(NULL, (sizeof(float)*img->width*img->height), prot, visi , -1,0);
+  img_copy->g = mmap(NULL, (sizeof(float)*img->width*img->height), prot, visi , -1,0);
+  img_copy->b = mmap(NULL, (sizeof(float)*img->width*img->height), prot, visi , -1,0);
 
-  unsigned int tmp;
-  unsigned int cntR,
-               cntG,
-               cntB,
-               cntArea;
+  img_copy->height = img->height;
+  img_copy->width = img->width;
+
 
   printf("\nDigite o raio do blur: \n");
   scanf("%d", &r);
 
-  pid[0] = fork();
-  if(!pid[0]){
+  pid = fork();
+  if(!pid){
     thread_R(*img, *img_copy);
     exit(0);
   }
-  pid[1] = fork();
-  if(!pid[1]){
+  pid = fork();
+  if(!pid){
     thread_G(*img, *img_copy);
     exit(0);
   }
-  pid[2] = fork();
-  if(!pid[2]){
+  pid = fork();
+  if(!pid){
     thread_B(*img, *img_copy);
     exit(0);
   }
 
-  for(i=0;i<=2;i++)
+  for(int i=0;i<3;i++)
     waitpid(-1, NULL, 0);
 
-  salvar_imagem("cachorro-out.jpg", &img_copy);
-  liberar_imagem(&img);
-  liberar_imagem(&img_copy);
+  salvar_imagem("cachorro-out.jpg", img_copy);
+  liberar_imagem(img);
+  //FAZER UNMAP 
+  munmap(img->r, (sizeof(float)*img->width*img->height));
+  munmap(img->g, (sizeof(float)*img->width*img->height));
+  munmap(img->b, (sizeof(float)*img->width*img->height));
+
+  munmap(img, sizeof(imagem));
+  munmap(img_copy, sizeof(imagem));
+  //liberar_imagem(img_copy);
   return 0;
 }

@@ -2,14 +2,20 @@
 #include <imageprocessing.h>
 #include <stdio.h>
 
+int r;
+imagem img, img_copy;
+
+
+
 void * thread_R(){
-  for (int i=0; i<(img->width); i++) {
-    for (int j=0; j<(img->height); j++) {
+  float cntR;
+  float cntAreaR;
+
+  for (int i=0; i<(img.width); i++) {
+    for (int j=0; j<(img.height); j++) {
       //inicializa variaveis auxiliares
       cntR=0;
-      cntG=0;
-      cntB=0;
-      cntArea=0;
+      cntAreaR=0;
 
       //Percorre a area de aplicacao do blur
       for(int k=-r; k<=r; k++){
@@ -17,27 +23,27 @@ void * thread_R(){
 
           if((j+l)>0 && (j+l)<img.height && (i+k)>0 && (i+k)<img.width){
             //Acessa uma posicao valida e acumula os valores de cada canal dentro da area
-            cntR += img->r[(j+l)*img.width + i+k];
+            cntR += img.r[(j+l)*img.width + i+k];
 
-            cntArea++;
+            cntAreaR = cntAreaR + 1.0;
           }
         }
 
       }
        //gera o pixel da nova imagem
-      img_copy->r[j*img.width + i] = cntR/cntArea;
+      img_copy.r[j*img.width + i] =((float)cntR)/((float)cntAreaR);
     }
   }
 }
 
 void * thread_G(){
-  for (int i=0; i<(img->width); i++) {
-    for (int j=0; j<(img->height); j++) {
+  float cntG;
+  float cntAreaG;
+  for (int i=0; i<(img.width); i++) {
+    for (int j=0; j<(img.height); j++) {
       //inicializa variaveis auxiliares
-      cntR=0;
       cntG=0;
-      cntB=0;
-      cntArea=0;
+      cntAreaG=0;
 
       //Percorre a area de aplicacao do blur
       for(int k=-r; k<=r; k++){
@@ -45,27 +51,27 @@ void * thread_G(){
 
           if((j+l)>0 && (j+l)<img.height && (i+k)>0 && (i+k)<img.width){
             //Acessa uma posicao valida e acumula os valores de cada canal dentro da area
-            cntR += img->g[(j+l)*img.width + i+k];
+            cntG += img.g[(j+l)*img.width + i+k];
 
-            cntArea++;
+            cntAreaG = cntAreaG + 1.0;
           }
         }
 
       }
        //gera o pixel da nova imagem
-      img_copy->g[j*img.width + i] = cntR/cntArea;
+      img_copy.g[j*img.width + i] =((float)cntG)/((float)cntAreaG);
     }
   }
 }
 
 void * thread_B(){
-  for (int i=0; i<(img->width); i++) {
-    for (int j=0; j<(img->height); j++) {
+  float cntAreaB;
+  float cntB;
+  for (int i=0; i<(img.width); i++) {
+    for (int j=0; j<(img.height); j++) {
       //inicializa variaveis auxiliares
-      cntR=0;
-      cntG=0;
       cntB=0;
-      cntArea=0;
+      cntAreaB=0;
 
       //Percorre a area de aplicacao do blur
       for(int k=-r; k<=r; k++){
@@ -73,32 +79,25 @@ void * thread_B(){
 
           if((j+l)>0 && (j+l)<img.height && (i+k)>0 && (i+k)<img.width){
             //Acessa uma posicao valida e acumula os valores de cada canal dentro da area
-            cntR += img->b[(j+l)*img.width + i+k];
+            cntB += img.b[(j+l)*img.width + i+k];
 
-            cntArea++;
+            cntAreaB = cntAreaB + 1.0;
           }
         }
 
       }
        //gera o pixel da nova imagem
-      img_copy->b[j*img.width + i] = cntR/cntArea;
+      img_copy.b[j*img.width + i] =((float)cntB)/((float)cntAreaB);
     }
   }
 }
 
-int r;
-imagem img, img_copy;
 
 int main(){
   pthread_t workers[3];
   img = abrir_imagem("data/cachorro.jpg");
   img_copy = abrir_imagem("data/cachorro.jpg");
 
-  unsigned int tmp;
-  unsigned int cntR,
-               cntG,
-               cntB,
-               cntArea;
 
   printf("\nDigite o raio do blur: \n");
   scanf("%d", &r);
@@ -106,6 +105,10 @@ int main(){
   pthread_create(&(workers[0]), NULL, thread_R, NULL);
   pthread_create(&(workers[1]), NULL, thread_G, NULL);
   pthread_create(&(workers[2]), NULL, thread_B, NULL);
+
+  pthread_join(workers[0], NULL);
+  pthread_join(workers[1], NULL);
+  pthread_join(workers[2], NULL);
 
   salvar_imagem("cachorro-out.jpg", &img_copy);
   liberar_imagem(&img);
