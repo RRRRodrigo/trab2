@@ -1,11 +1,12 @@
-
+#include <time.h>
 #include <imageprocessing.h>
 #include <stdio.h>
 
 
 int main() {
+  clock_t t0, t1;
+  t0=clock();
   imagem img, img_copy;
-
   img = abrir_imagem("data/cachorro.jpg");
   img_copy = abrir_imagem("data/cachorro.jpg");
 
@@ -54,5 +55,7 @@ int main() {
   salvar_imagem("cachorro-out.jpg", &img_copy);
   liberar_imagem(&img);
   liberar_imagem(&img_copy);
+  t1=clock();
+  printf("Tempo para aplicar blur: %lf segundos\n", (double)(t1-t0)/CLOCKS_PER_SEC);
   return 0;
 }

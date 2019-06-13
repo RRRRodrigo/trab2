@@ -4,6 +4,7 @@
 #include <imageprocessing.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 int r;
 imagem *img, *img_copy;
@@ -95,6 +96,8 @@ void thread_B(imagem img, imagem img_copy){
 
 
 int main(){
+  struct timespec t0, t1;
+  clock_gettime(CLOCK_MONOTONIC, &t0);
   int prot = PROT_READ | PROT_WRITE;
   int visi = MAP_SHARED | MAP_ANON;
   imagem* img = mmap(NULL, sizeof(imagem), prot, visi , -1,0);
@@ -143,5 +146,9 @@ int main(){
   munmap(img, sizeof(imagem));
   munmap(img_copy, sizeof(imagem));
   //liberar_imagem(img_copy);
+  clock_gettime(CLOCK_MONOTONIC, &t1);
+  double elapsed = (t1.tv_sec - t0.tv_sec);
+  elapsed += (t1.tv_nsec - t0.tv_nsec) / 1000000000.0;
+  printf("Tempo para aplicar blur: %lf segundos\n", elapsed);
   return 0;
 }
